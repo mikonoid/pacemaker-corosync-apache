@@ -1,0 +1,25 @@
+node $id="1" node1 \
+       	attributes standby="off"
+node $id="2" node2 \
+       	attributes standby="off"
+primitive WebSite ocf:heartbeat:apache \
+       	params configfile="/etc/apache2/apache2.conf" \
+       	op monitor interval="60s" \
+       	meta target-role="Started" is-managed="true" \
+       	params httpd="/usr/sbin/apache2" \
+       	params statusurl="http://localhost/server-status"
+primitive master-ip ocf:heartbeat:IPaddr2 \
+       	params ip="192.168.99.103" iflabel="vipa" \
+       	op monitor interval="5s"
+location location-WebSite-at-node1 WebSite 100: node1
+location location-Website-at-node2 WebSite 50: node2
+location location-vipa-at-node1 master-ip 100: node1
+location location-vipa-at-node2 master-ip 100: node2
+colocation website-with-ip inf: WebSite master-ip
+order apache-after-ip inf: master-ip WebSite
+property $id="cib-bootstrap-options" \
+       	dc-version="1.1.10-42f2063" \
+       	cluster-infrastructure="corosync" \
+       	stonith-enabled="false" \
+       	no-quorum-policy="ignore" \
+       	symmetric-cluster="false"
